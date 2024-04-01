@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css" />
+    <script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+    <div class="container text-center">
+        <h3>Task List</h3>
+    </div>
+
+    <div class="container text-center border p-3" id="taskList">
+        <div>Loading...</div>
+    </div>
+
+    <div class="container text-center pt-1">
+        <button data-toggle="modal" data-target="#exampleModal" class="btn btn-primary">Add</button>
+    </div>
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">New task</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row p-3">
+                        <label class="col-3" for="title">Title</label>
+                        <input id="title" class="col-9" name="title">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" id="closeBtn">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="createTask()">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit task</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row p-3">
+                        <label class="col-3" for="title">Title</label>
+                        <input id="title1" class="col-9" name="title">
+                        <input id="id1" hidden />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" id="closeBtn1">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="updateTask()">Edit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function createTask() {
+            const title = $("#title").val();
+
+            if (title.length > 0) {
+                await fetch('/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title })
+                });
+
+                loadTaskList();
+                $("#title").val('');
+
+                $('#closeBtn').click();
+            }
+        }
+
+        async function deleteTask(id) {
+            await fetch(`/tasks/${id}`, {
+                method: 'DELETE',
+            });
+
+            loadTaskList();
+        }
+
+        async function updateTask() {
+            const id = $('#id1').val();
+            const title = $('#title1').val();
+            await fetch(`/tasks/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title })
+            });
+
+            loadTaskList();
+            $('#closeBtn1').click();
+        }
+
+        async function _update(id) {
+            const title = $(`#title-${id}`).html();
+
+            $('#title1').val(title);
+            $('#id1').val(id);
+
+        }
+
+        async function loadTaskList() {
+            const response = await fetch('/tasks');
+            const data = await response.json();
+
+            let html = ''
+            const template = `<div class="row">
+                <div class="col-1"><input type="checkbox"></div>
+                <div class="col-7 text-start" id="title-_ID_">_TITLE_</div>
+                <div class="col-2"><button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#editModal" onclick="_update(_ID_);">Edit</button></div>
+                <div class="col-2"><button type="button" class="btn btn-secondary" onclick="deleteTask(_ID_)">Delete</button></div>
+                </div>`
+            for (let i = 0; i < data.length; ++i) {
+                html = html + template.replace(/_TITLE_/g, data[i].title).replace(/_ID_/g, data[i].id);
+            }
+
+            $('#taskList').html(html);
+        }
+
+        window.onload = function () {
+            loadTaskList();
+        }
+    </script>
+</body>
+
+</html>
